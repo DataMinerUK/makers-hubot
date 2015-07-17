@@ -2,17 +2,17 @@
 #   Utility commands surrounding Hubot uptime.
 #
 # Commands:
-# 
+#
 
 Url   = require "url"
 Redis = require "redis"
 UUID  = require "node-uuid"
 
 module.exports = (robot) ->
-  info   = Url.parse process.env.REDISTOGO_URL or process.env.REDISCLOUD_URL or process.env.BOXEN_REDIS_URL or process.env.REDIS_URL or 'redis://localhost:6379', true
+  info   = Url.parse process.env.REDISTOGO_URL or process.env.REDISCLOUD_URL or process.env.BOXEN_REDIS_URL or process.env.REDIS_URL or 'redis://redistogo:086c6eeb9af3f8b59226cd3b15d85a48@tarpon.redistogo.com:10240/', true
   client = Redis.createClient(info.port, info.hostname)
 
-  robot.hear /cc scheduler/i, (msg) -> 
+  robot.hear /cc scheduler/i, (msg) ->
     event_id = String(UUID.v4())[0..7]
     timestamp = new Date().getTime()
     msg.message.event_id = event_id
@@ -28,7 +28,7 @@ module.exports = (robot) ->
       "scheduler yes <event_id> <message>: Add yourself to participants list. Add optional <message> for the event creator. \n" +
       "scheduler no <event_id>: Remove yourself from participants list. \n" +
       "scheduler status <event_id>: List event participants\n" +
-      "scheduler roundup <event_id>: @mention event participants\n" + 
+      "scheduler roundup <event_id>: @mention event participants\n" +
       "scheduler list <count>: List last <count> events. Defaults to 5.\n"
 
     msg.send(reply_str)
@@ -36,7 +36,7 @@ module.exports = (robot) ->
   robot.hear /scheduler yes ([\w\d]{8})/i, (msg) ->
     event_id = msg.match[1]
     client.keys "scheduler_*_#{event_id}:messages", (err, keys) ->
-      if err 
+      if err
         throw err
 
       if keys.length == 1
@@ -55,14 +55,14 @@ module.exports = (robot) ->
           robot.logger.info JSON.stringify(parsed)
       else if keys.length == 0
         msg.send("Invalid event id.")
-      else 
+      else
         msg.send("The universe is not random.")
 
 
   robot.hear /scheduler no ([\w\d]{8})/i, (msg) ->
     event_id = msg.match[1]
     client.keys "scheduler_*_#{event_id}:messages", (err, keys) ->
-      if err 
+      if err
         throw err
 
       if keys.length == 1
@@ -78,7 +78,7 @@ module.exports = (robot) ->
             client.set event_key, JSON.stringify(parsed)
       else if keys.length == 0
         msg.send("Invalid event id.")
-      else 
+      else
         msg.send("The universe is not random.")
 
 
@@ -93,21 +93,21 @@ module.exports = (robot) ->
       robot.logger.info(keys)
       client.mget keys, (err, values) ->
         if err
-          throw err 
+          throw err
 
         list_str = "Last #{count} events:\n"
         for value in values
           value = JSON.parse(value)
           text = value.text.replace('cc scheduler', '')
           list_str += "Event '#{text}' has ID: #{value.event_id}. Use #{value.event_id} to list participants or opt in/out. \n"
-        
+
         msg.send(list_str)
 
 
   robot.hear /scheduler status ([\w\d]{8})/i, (msg) ->
     event_id = msg.match[1]
     client.keys "scheduler_*_#{event_id}:messages", (err, keys) ->
-      if err 
+      if err
         throw err
 
       if keys.length == 1
@@ -116,24 +116,24 @@ module.exports = (robot) ->
         client.get event_key, (err, replies) ->
           if not replies
             msg.send("No responses found for #{event_id}.")
-          if replies 
+          if replies
             replies = JSON.parse(replies)
             replies_count = Object.keys(replies).length
             replies_str = "#{replies_count} replies\n"
-            for username, reply of replies 
+            for username, reply of replies
               replies_str += "#{username}: #{reply}\n"
 
             msg.send(replies_str)
       else if keys.length == 0
         msg.send("Invalid event id.")
-      else 
+      else
         msg.send("The universe is not random.")
 
 
   robot.hear /scheduler roundup ([\w\d]{8})/i, (msg) ->
     event_id = msg.match[1]
     client.keys "scheduler_*_#{event_id}:messages", (err, keys) ->
-      if err 
+      if err
         throw err
 
       if keys.length == 1
@@ -144,13 +144,13 @@ module.exports = (robot) ->
 
           replies = JSON.parse(replies)
           replies_str = ""
-          for username, reply of replies 
+          for username, reply of replies
             replies_str += "@#{username} "
 
           msg.send(replies_str + "let's go!")
       else if keys.length == 0
         msg.send("Invalid event id.")
-      else 
+      else
         msg.send("The universe is not random.")
 
   if info.auth
@@ -176,13 +176,13 @@ module.exports = (robot) ->
 
 # webhook_url = 'https://hackerparadise2014.slack.com/services/hooks/incoming-webhook?token=MJhXhakAnBMLSq781YPgOeEo'
 # webhook_params = {
-#   "channel": "#" + msg.message.room, 
-#   "username": "Hacker Paradise Scheduler", 
-#   "text": "To opt in for #{event_title}, respond with 'scheduler yes #{event_id}'.", 
+#   "channel": "#" + msg.message.room,
+#   "username": "Hacker Paradise Scheduler",
+#   "text": "To opt in for #{event_title}, respond with 'scheduler yes #{event_id}'.",
 #   "icon_emoji": ":eggplant:"}
 
 # msg.http(webhook_url).post(JSON.stringify(webhook_params)) (err, res, body) ->
 #   if err
-#     throw err 
-#   else if res 
-#     robot.logger.info body 
+#     throw err
+#   else if res
+#     robot.logger.info body
